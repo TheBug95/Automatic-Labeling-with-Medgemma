@@ -1,0 +1,72 @@
+# =====================
+# macOS
+# =====================
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+# =====================
+# Python
+# =====================
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+venv/
+ENV/
+env/
+pip-wheel-metadata/
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# =====================
+# PyTorch
+# =====================
+*.pt
+*.pth
+*.ckpt
+checkpoints/
+runs/
+lightning_logs/
+
+# =====================
+# Jupyter Notebooks
+# =====================
+.ipynb_checkpoints/
+*.nbconvert.ipynb
+
+# =====================
+# Streamlit
+# =====================
+.streamlit/secrets.toml
+.streamlit/.cache
+.streamlit/cache
+.streamlit/config.toml
+
+# =====================
+# Logs & Temp Files
+# =====================
+*.log
+*.tmp
+*.swp
+
+# =====================
+# Archives (skip zip files)
+# =====================
+*.zip
+*.tar
+*.tar.gz
+*.rar
+
+# =====================
+# IDEs
+# =====================
+.vscode/
+.idea/
