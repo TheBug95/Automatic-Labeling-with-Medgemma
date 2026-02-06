@@ -1,0 +1,10 @@
+streamlit
+openai-whisper
+torch
+pandas
+firebase-admin
+notebook
+transformers 
+pillow
+whisper
+numba
