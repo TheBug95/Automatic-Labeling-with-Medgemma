@@ -17,7 +17,7 @@ The application requires the fundus image dataset to function.
 Make sure you have Python installed, then run:
 
 ```bash
-pip install streamlit notebook torch transformers pillow whisper
+pip install streamlit notebook torch transformers pillow whisper numba
 ````
 
 -----
