@@ -15,6 +15,7 @@ from components.gallery import render_gallery
 from components.labeler import render_labeler
 from components.recorder import render_recorder
 from components.downloader import render_downloader
+from components.image_protection import inject_image_protection
 from services.auth_service import require_auth, do_logout
 
 # ── PAGE CONFIG ──────────────────────────────────────────────────────────────
@@ -56,6 +57,10 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
+# ── IMAGE PROTECTION (prevent download / right-click save) ───────────────────
+inject_image_protection()
+
 # ── AUTHENTICATION GATE ───────────────────────────────────────────────────────
 if not require_auth():
     st.stop()
