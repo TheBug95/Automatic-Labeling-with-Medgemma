@@ -254,13 +254,19 @@ if sm.has_undownloaded_data() and not st.session_state.get("session_downloaded",
     st.components.v1.html(
         """
         <script>
-        window.addEventListener('beforeunload', function (e) {
-            e.preventDefault();
-            e.returnValue = '';
-        });
+        (function(){
+            try {
+                var d = window.parent || window;
+                d.addEventListener('beforeunload', function (e) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                });
+            } catch(err) {}
+        })();
         </script>
         """,
         height=0,
+        width=0,
     )
 # ── MAIN CONTENT ─────────────────────────────────────────────────────────────
 st.title(f"{config.APP_ICON} {config.APP_TITLE}")
@@ -300,12 +306,14 @@ render_labeler(current_id)
 
 st.divider()
 
-# 2️⃣ IMAGE — with navigation and delete
-st.image(
-    current_img["bytes"],
-    caption=current_img["filename"],
-    use_container_width=True,
-)
+# 2️⃣ IMAGE — with navigation and delete (max 500px to fit on screen)
+_img_col1, _img_col2, _img_col3 = st.columns([1, 3, 1])
+with _img_col2:
+    st.image(
+        current_img["bytes"],
+        caption=current_img["filename"],
+        use_container_width=True,
+    )
 
 c1, c2, c3 = st.columns([1, 2, 1])
 with c1:

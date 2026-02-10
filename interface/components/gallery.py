@@ -36,7 +36,8 @@ def render_gallery():
 
     # ── Thumbnail strip ──────────────────────────────────────────────────
     # Show up to 8 thumbnails per row; wrap if there are more.
-    COLS_PER_ROW = 8
+    COLS_PER_ROW = 6
+    THUMB_HEIGHT = 120  # fixed thumbnail height in pixels
     num_images = len(order)
 
     # Paginate the gallery if many images
@@ -49,7 +50,8 @@ def render_gallery():
     end = min(start + COLS_PER_ROW, num_images)
     visible_ids = order[start:end]
 
-    cols = st.columns(max(len(visible_ids), 1))
+    # Always use fixed number of columns so thumbnails keep consistent size
+    cols = st.columns(COLS_PER_ROW)
 
     clicked = False
     for i, img_id in enumerate(visible_ids):
@@ -59,17 +61,14 @@ def render_gallery():
 
         with cols[i]:
             # Visual border to highlight the selected thumbnail
-            if is_selected:
-                st.markdown(
-                    "<div style='border:3px solid #4CAF50; border-radius:8px; "
-                    "padding:2px;'>",
-                    unsafe_allow_html=True,
-                )
-
-            st.image(img["bytes"], use_container_width=True)
-
-            if is_selected:
-                st.markdown("</div>", unsafe_allow_html=True)
+            border_color = "#4CAF50" if is_selected else "transparent"
+            st.markdown(
+                f"<div style='border:3px solid {border_color}; border-radius:8px; "
+                f"padding:2px; text-align:center;'>",
+                unsafe_allow_html=True,
+            )
+            st.image(img["bytes"], width=THUMB_HEIGHT)
+            st.markdown("</div>", unsafe_allow_html=True)
 
             # Label + filename
             short_name = img["filename"]

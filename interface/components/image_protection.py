@@ -174,16 +174,12 @@ def inject_image_protection():
     """Inject all CSS + JS image-protection layers into the page.
 
     Call this ONCE near the top of main.py, after st.set_page_config().
+    CSS is re-injected every rerun (Streamlit requires it in the render tree).
+    JS has its own internal guard to avoid duplicate listeners.
     """
-    # Guard: only inject once per session to avoid rerun loops
-    if "image_protection_injected" in st.session_state:
-        return
-    
-    st.session_state.image_protection_injected = True
-    
-    # CSS — works natively via st.markdown
+    # CSS — MUST be re-injected every rerun so it stays in the DOM
     st.markdown(_PROTECTION_CSS, unsafe_allow_html=True)
 
-    # JS — MUST use components.html so the <script> actually executes.
-    # height=0 makes the iframe invisible.
-    components.html(_PROTECTION_JS_HTML, height=0, scrolling=False)
+    # JS — uses components.html; internal guard prevents duplicate listeners.
+    # height=0, width=0 makes the iframe invisible and avoids layout shifts.
+    components.html(_PROTECTION_JS_HTML, height=0, width=0, scrolling=False)
