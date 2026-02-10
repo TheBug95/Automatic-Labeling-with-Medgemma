@@ -250,23 +250,19 @@ with st.spinner(t("loading_whisper", model=selected_model)):
     model = load_whisper_model(selected_model)
 # ── BROWSER CLOSE GUARD (beforeunload) ───────────────────────────────────
 # Warn the user when they try to close/reload the tab with data in session.
+# Uses img onerror trick to avoid creating an iframe (which causes layout shifts).
 if sm.has_undownloaded_data() and not st.session_state.get("session_downloaded", False):
-    st.components.v1.html(
-        """
-        <script>
+    st.markdown(
+        """<img src="x" style="display:none!important" onerror="
         (function(){
-            try {
-                var d = window.parent || window;
-                d.addEventListener('beforeunload', function (e) {
-                    e.preventDefault();
-                    e.returnValue = '';
-                });
-            } catch(err) {}
+            if(window.__beforeunload_set__)return;
+            window.__beforeunload_set__=true;
+            window.addEventListener('beforeunload',function(e){
+                e.preventDefault();e.returnValue='';
+            });
         })();
-        </script>
-        """,
-        height=0,
-        width=0,
+        " />""",
+        unsafe_allow_html=True,
     )
 # ── MAIN CONTENT ─────────────────────────────────────────────────────────────
 st.title(f"{config.APP_ICON} {config.APP_TITLE}")
