@@ -86,5 +86,5 @@ APP_ICON = "👁️"
 APP_SUBTITLE = "Sistema de Etiquetado Médico Oftalmológico"
 
 # ── UI Language ──────────────────────────────────────────────────────────────
-# "es" = Español, "en" = English
-UI_LANGUAGE = "es"
+# Language is now managed via st.session_state["ui_language"] and i18n module.
+# Supported: "es" (Español), "en" (English).

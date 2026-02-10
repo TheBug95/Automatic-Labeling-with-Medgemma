@@ -9,6 +9,7 @@ Uses @st.dialog modals to warn about:
 import streamlit as st
 import config
 import database as db
+from i18n import t
 from services import session_manager as sm
 from utils import validate_image_bytes
 
@@ -19,49 +20,48 @@ def _reset_uploader():
 
 
 # ── Modal: previously labeled images ─────────────────────────────────────────
-@st.dialog("⚠️ Imágenes ya etiquetadas", width="large", dismissible=False)
 def _show_relabel_dialog():
     """Modal dialog asking the doctor which previously-labeled images to re-upload."""
-    pending = st.session_state.get("_pending_upload_review")
-    if not pending:
-        st.rerun()
-        return
 
-    prev = pending["previously_labeled"]
-    non_labeled_count = len(pending["files"]) - len(prev)
+    @st.dialog(t("dlg_relabel"), width="large", dismissible=False)
+    def _dlg():
+        pending = st.session_state.get("_pending_upload_review")
+        if not pending:
+            st.rerun()
+            return
 
-    st.markdown(
-        f"**{len(prev)} imagen(es)** ya fueron etiquetadas anteriormente. "
-        "Seleccione cuáles desea volver a etiquetar."
-    )
-    if non_labeled_count > 0:
-        st.info(
-            f"ℹ️ Las otras **{non_labeled_count}** imagen(es) nuevas se subirán automáticamente."
-        )
+        prev = pending["previously_labeled"]
+        non_labeled_count = len(pending["files"]) - len(prev)
 
-    relabel_choices = {}
-    for fname, records in prev.items():
-        latest = records[0]
-        label_info = latest.get("label", "—")
-        doctor_info = latest.get("doctorName", "—")
-        ts_info = str(latest.get("createdAt", ""))[:16]
-        n_times = len(records)
-        badge = f"({n_times} vez{'es' if n_times > 1 else ''})"
+        st.markdown(t("relabel_dialog_msg", count=len(prev)))
+        if non_labeled_count > 0:
+            st.info(t("relabel_new_info", count=non_labeled_count))
 
-        relabel_choices[fname] = st.checkbox(
-            f"**{fname}** — _{label_info}_ | {doctor_info} | {ts_info} {badge}",
-            value=True,
-            key=f"_dlg_relabel_{fname}",
-        )
+        relabel_choices = {}
+        for fname, records in prev.items():
+            latest = records[0]
+            label_info = latest.get("label", "—")
+            doctor_info = latest.get("doctorName", "—")
+            ts_info = str(latest.get("createdAt", ""))[:16]
+            n_times = len(records)
+            badge = t("times_badge_plural", n=n_times) if n_times > 1 else t("times_badge", n=n_times)
 
-    st.divider()
-    col_a, col_b = st.columns(2)
-    with col_a:
-        if st.button("✅ Aceptar y subir", type="primary", use_container_width=True):
-            _process_pending(relabel_choices)
-    with col_b:
-        if st.button("❌ Cancelar etiquetadas", use_container_width=True):
-            _cancel_pending()
+            relabel_choices[fname] = st.checkbox(
+                f"**{fname}** — _{label_info}_ | {doctor_info} | {ts_info} ({badge})",
+                value=True,
+                key=f"_dlg_relabel_{fname}",
+            )
+
+        st.divider()
+        col_a, col_b = st.columns(2)
+        with col_a:
+            if st.button(t("accept_upload"), type="primary", use_container_width=True):
+                _process_pending(relabel_choices)
+        with col_b:
+            if st.button(t("cancel_labeled"), use_container_width=True):
+                _cancel_pending()
+
+    _dlg()
 
 
 def _process_pending(relabel_choices: dict[str, bool]):
@@ -128,24 +128,27 @@ def _cancel_pending():
 
 
 # ── Modal: session duplicates (informational) ────────────────────────────────
-@st.dialog("ℹ️ Imágenes duplicadas en sesión", dismissible=False)
 def _show_duplicates_dialog():
     """Informational modal listing images already present in the current session."""
-    dup_names = st.session_state.get("_session_duplicates", [])
-    if not dup_names:
-        st.rerun()
-        return
 
-    st.markdown(
-        "Las siguientes imágenes **ya se encuentran en la sesión actual** "
-        "y no se volverán a subir:"
-    )
-    for fname in dup_names:
-        st.markdown(f"- `{fname}`")
+    @st.dialog(t("dlg_duplicates"), dismissible=False)
+    def _dlg():
+        dup_names = st.session_state.get("_session_duplicates", [])
+        if not dup_names:
+            st.rerun()
+            return
 
-    if st.button("Aceptar", use_container_width=True):
-        st.session_state.pop("_session_duplicates", None)
-        st.rerun()
+        st.markdown(
+            t("duplicates_dialog_msg")
+        )
+        for fname in dup_names:
+            st.markdown(f"- `{fname}`")
+
+        if st.button(t("accept"), use_container_width=True):
+            st.session_state.pop("_session_duplicates", None)
+            st.rerun()
+
+    _dlg()
 
 
 # ── Main uploader ────────────────────────────────────────────────────────────
@@ -157,11 +160,11 @@ def render_uploader():
     counter = st.session_state.get("_uploader_counter", 0)
 
     uploaded_files = st.file_uploader(
-        "📤 Subir imágenes médicas",
+        t("upload_images"),
         type=config.ALLOWED_EXTENSIONS,
         accept_multiple_files=True,
-        help=f"Formatos aceptados: {', '.join(config.ALLOWED_EXTENSIONS)}. "
-             f"Máx. {config.MAX_UPLOAD_SIZE_MB} MB por archivo.",
+        help=f"{t('upload_help_formats')}: {', '.join(config.ALLOWED_EXTENSIONS)}. "
+             f"{t('upload_help_max')} {config.MAX_UPLOAD_SIZE_MB} MB.",
         key=f"uploader_{counter}",
     )
 
@@ -241,7 +244,7 @@ def render_uploader():
 
     if skipped_invalid > 0:
         st.warning(
-            f"⚠️ {skipped_invalid} archivo(s) no son imágenes válidas y fueron ignorados."
+            f"⚠️ {skipped_invalid} {t('invalid_files')}"
         )
 
     if new_count > 0:

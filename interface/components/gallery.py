@@ -5,6 +5,7 @@ badges and click-to-select behaviour.
 """
 
 import streamlit as st
+from i18n import t
 from services import session_manager as sm
 
 
@@ -29,7 +30,7 @@ def render_gallery():
 
     # ── Progress bar ─────────────────────────────────────────────────────
     labeled, total = sm.get_labeling_progress()
-    progress_text = f"Progreso: **{labeled}** / **{total}** etiquetadas"
+    progress_text = f"{t('progress')}: **{labeled}** / **{total}** {t('labeled_suffix')}"
     st.markdown(progress_text)
     st.progress(labeled / total if total > 0 else 0)
 
@@ -88,18 +89,18 @@ def render_gallery():
         gc1, gc2, gc3 = st.columns([1, 3, 1])
         with gc1:
             if page > 0:
-                if st.button("◀ Ant.", key="gal_prev"):
+                if st.button(t("gallery_prev"), key="gal_prev"):
                     st.session_state.gallery_page -= 1
                     clicked = True
         with gc2:
             st.markdown(
                 f"<div style='text-align:center; padding-top:6px;'>"
-                f"Página {page + 1} / {total_pages}</div>",
+                f"{t('page')} {page + 1} / {total_pages}</div>",
                 unsafe_allow_html=True,
             )
         with gc3:
             if page < total_pages - 1:
-                if st.button("Sig. ▶", key="gal_next"):
+                if st.button(t("gallery_next"), key="gal_next"):
                     st.session_state.gallery_page += 1
                     clicked = True
 

@@ -14,6 +14,7 @@ Numeric values are stored for ML; only text labels are shown in the UI.
 import streamlit as st
 import config
 import database as db
+from i18n import t, label_display, label_from_display, locs_display
 from services import session_manager as sm
 
 
@@ -36,7 +37,7 @@ def _render_locs_dropdown(field: dict, image_id: str, current_locs: dict) -> int
     """Render a single LOCS dropdown and return the selected numeric value."""
     field_id = field["field_id"]
     options = field["options"]
-    display_labels = [opt["display"] for opt in options]
+    display_labels = [locs_display(opt["display"]) for opt in options]
 
     # Determine current index from stored data
     stored_value = current_locs.get(field_id)
@@ -50,11 +51,11 @@ def _render_locs_dropdown(field: dict, image_id: str, current_locs: dict) -> int
 
     # Use index=None so nothing is pre-selected until doctor chooses
     selected_display = st.selectbox(
-        field["label"],
+        locs_display(field["label"]),
         display_labels,
         index=current_index,
         key=f"locs_{field_id}_{image_id}",
-        placeholder="Seleccionar…",
+        placeholder=t("locs_placeholder"),
     )
 
     if selected_display is not None and selected_display in display_labels:
@@ -69,31 +70,37 @@ def render_labeler(image_id: str):
     if img is None:
         return
 
-    st.subheader("🏷️ Etiquetado")
+    st.subheader(t("labeling"))
 
     # ── 1. Categorical classification ────────────────────────────────────
-    display_options = [opt["display"] for opt in config.LABEL_OPTIONS]
-    current_label = img.get("label")
+    # Translated display (UI only); storage always uses English name.
+    translated_options = [label_display(opt["display"]) for opt in config.LABEL_OPTIONS]
+    current_label = img.get("label")  # English, e.g. "Cataract"
 
-    if current_label is not None and current_label in display_options:
-        current_index = display_options.index(current_label)
+    if current_label is not None:
+        translated_current = label_display(current_label)
+        if translated_current in translated_options:
+            current_index = translated_options.index(translated_current)
+        else:
+            current_index = None
     else:
         current_index = None
 
     with st.container(border=True):
         if current_index is None:
-            st.caption("⬇️ Seleccione una etiqueta para esta imagen")
+            st.caption(t("select_label_hint"))
 
         selected = st.radio(
-            "Clasificación",
-            display_options,
+            t("classification"),
+            translated_options,
             index=current_index,
             key=f"label_radio_{image_id}",
             horizontal=True,
             label_visibility="collapsed",
         )
 
-    new_label = selected if selected in display_options else None
+    # Map translated selection back to English for storage
+    new_label = label_from_display(selected) if selected in translated_options else None
 
     # Detect categorical change
     label_changed = new_label is not None and new_label != current_label
@@ -110,7 +117,7 @@ def render_labeler(image_id: str):
     effective_label = new_label or current_label
     if effective_label == "Cataract":
         st.markdown("---")
-        st.markdown("**LOCS III Classification**")
+        st.markdown(t("locs_title"))
 
         current_locs = img.get("locs_data", {})
         locs_changed = False
@@ -133,12 +140,12 @@ def render_labeler(image_id: str):
         filled = sum(1 for f in config.LOCS_FIELDS if f["field_id"] in current_locs)
         total_fields = len(config.LOCS_FIELDS)
         if filled < total_fields:
-            st.info(f"📋 LOCS: {filled}/{total_fields} campos completados")
+            st.info(t("locs_progress", filled=filled, total=total_fields))
         else:
-            st.success(f"✅ LOCS: {filled}/{total_fields} campos completados")
+            st.success(t("locs_complete", filled=filled, total=total_fields))
 
-    # ── 3. Visual feedback ───────────────────────────────────────────────
+    # ── 3. Visual feedback ───────────────────────────────────────────────────
     if effective_label is None:
-        st.warning("🔴 Sin etiquetar")
+        st.warning(t("unlabeled"))
     else:
-        st.success(f"🟢 Etiqueta: **{effective_label}**")
+        st.success(f"{t('label_set')}: **{label_display(effective_label)}**")

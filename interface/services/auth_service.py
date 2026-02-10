@@ -16,6 +16,8 @@ try:
 except ImportError:
     AUTH_AVAILABLE = False
 
+from i18n import t
+
 
 # ── Default credentials ──────────────────────────────────────────────────────
 # In production, load these from a secure YAML/env.  For now, hardcoded demo.
@@ -81,11 +83,11 @@ def require_auth() -> bool:
         return True
 
     elif st.session_state.get("authentication_status") is False:
-        st.error("❌ Usuario o contraseña incorrectos.")
+        st.error(t("login_error"))
         return False
 
     else:
-        st.info("👨‍⚕️ Inicie sesión para acceder al sistema de etiquetado.")
+        st.info(t("login_prompt"))
         return False
 
 
@@ -96,4 +98,18 @@ def render_logout_button():
 
     if st.session_state.get("authentication_status"):
         authenticator = _get_authenticator()
-        authenticator.logout("🚪 Cerrar sesión", location="sidebar")
+        authenticator.logout(t("logout"), location="sidebar")
+
+
+def do_logout():
+    """Programmatically log out the current user."""
+    if not AUTH_AVAILABLE:
+        return
+    try:
+        authenticator = _get_authenticator()
+        authenticator.logout(location="unrendered")
+    except Exception:
+        # Fallback: clear auth keys manually
+        for key in ("authentication_status", "username", "name", "logout"):
+            st.session_state.pop(key, None)
+        st.session_state.pop("authenticator", None)
