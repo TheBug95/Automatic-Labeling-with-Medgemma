@@ -1,0 +1,36 @@
+# Git
+.git
+.gitattributes
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+.venv
+venv
+env
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Local databases (fresh on each deploy)
+*.db
+
+# Jupyter
+*.ipynb
+.ipynb_checkpoints
+
+# Misc
+*.log
+*.csv
+*.zip
+.env
+.env.*
+packages.txt
+LICENSE
+README.md

@@ -16,9 +16,10 @@ if shutil.which("ffmpeg") is None:
     try:
         import imageio_ffmpeg
         _ffmpeg_real = imageio_ffmpeg.get_ffmpeg_exe()
-        # The bundled binary has a long name; create an alias as ffmpeg.exe
-        # next to it so that Whisper (which calls "ffmpeg") can find it.
-        _ffmpeg_alias = os.path.join(os.path.dirname(_ffmpeg_real), "ffmpeg.exe")
+        _ffmpeg_dir = os.path.dirname(_ffmpeg_real)
+        # Create an alias so that Whisper (which calls "ffmpeg") can find it.
+        _alias_name = "ffmpeg.exe" if os.name == "nt" else "ffmpeg"
+        _ffmpeg_alias = os.path.join(_ffmpeg_dir, _alias_name)
         if not os.path.exists(_ffmpeg_alias):
             try:
                 os.link(_ffmpeg_real, _ffmpeg_alias)   # hard link (no admin)
@@ -26,7 +27,7 @@ if shutil.which("ffmpeg") is None:
                 import shutil as _sh
                 _sh.copy2(_ffmpeg_real, _ffmpeg_alias)  # fallback: copy
         os.environ["PATH"] = (
-            os.path.dirname(_ffmpeg_alias) + os.pathsep + os.environ.get("PATH", "")
+            _ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
         )
     except ImportError:
         pass  # Will fail later with a clear Whisper error

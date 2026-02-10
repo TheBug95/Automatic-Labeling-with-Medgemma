@@ -1,12 +1,9 @@
-streamlit
+streamlit>=1.54.0
 openai-whisper
 imageio-ffmpeg
 torch
 pandas
-firebase-admin
-notebook
-transformers 
 pillow
-whisper
 numba
 streamlit-authenticator
+bcrypt
