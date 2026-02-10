@@ -23,6 +23,15 @@ st.set_page_config(
     layout="wide",
     page_icon=config.APP_ICON,
 )
+
+# ── FIX: Prevent horizontal layout shift from scrollbar appearing/disappearing
+st.markdown("""
+<style>
+    html {
+        overflow-y: scroll;
+    }
+</style>
+""", unsafe_allow_html=True)
 # ── AUTHENTICATION GATE ───────────────────────────────────────────────────────
 if not require_auth():
     st.stop()
