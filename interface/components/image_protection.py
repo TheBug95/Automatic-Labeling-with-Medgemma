@@ -138,13 +138,19 @@ _PROTECTION_JS_HTML = """
     }
     lockImages(doc);
 
+    // Debounce to reduce excessive firing
+    var lockTimer = null;
     var obs = new MutationObserver(function (mutations) {
-        for (var m = 0; m < mutations.length; m++) {
-            var nodes = mutations[m].addedNodes;
-            for (var n = 0; n < nodes.length; n++) {
-                if (nodes[n].nodeType === 1) lockImages(nodes[n]);
+        if (lockTimer) return;  // skip if already scheduled
+        lockTimer = setTimeout(function() {
+            lockTimer = null;
+            for (var m = 0; m < mutations.length; m++) {
+                var nodes = mutations[m].addedNodes;
+                for (var n = 0; n < nodes.length; n++) {
+                    if (nodes[n].nodeType === 1) lockImages(nodes[n]);
+                }
             }
-        }
+        }, 100);  // debounce 100ms
     });
     obs.observe(doc.body, { childList: true, subtree: true });
 
@@ -169,6 +175,12 @@ def inject_image_protection():
 
     Call this ONCE near the top of main.py, after st.set_page_config().
     """
+    # Guard: only inject once per session to avoid rerun loops
+    if "image_protection_injected" in st.session_state:
+        return
+    
+    st.session_state.image_protection_injected = True
+    
     # CSS — works natively via st.markdown
     st.markdown(_PROTECTION_CSS, unsafe_allow_html=True)
 
