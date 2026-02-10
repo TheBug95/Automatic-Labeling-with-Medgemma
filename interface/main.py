@@ -25,10 +25,34 @@ st.set_page_config(
 )
 
 # ── FIX: Prevent horizontal layout shift from scrollbar appearing/disappearing
+# HF Spaces renders Streamlit inside an iframe. The scroll container is NOT
+# <html> but internal Streamlit elements. We target every possible scroll
+# container and use scrollbar-gutter:stable (modern) + overflow-y:scroll (fallback).
 st.markdown("""
 <style>
-    html {
-        overflow-y: scroll;
+    /* Modern solution: reserves space for scrollbar even when not needed */
+    html,
+    body,
+    [data-testid="stAppViewContainer"],
+    [data-testid="stMain"],
+    .main,
+    section[data-testid="stMain"],
+    [data-testid="stVerticalBlockBorderWrapper"],
+    .stMainBlockContainer {
+        scrollbar-gutter: stable !important;
+    }
+
+    /* Fallback: force scrollbar always visible on all potential containers */
+    [data-testid="stAppViewContainer"],
+    [data-testid="stMain"],
+    section.main {
+        overflow-y: scroll !important;
+    }
+
+    /* Prevent any horizontal overflow that could cause shifts */
+    [data-testid="stMainBlockContainer"],
+    [data-testid="stVerticalBlock"] {
+        overflow-x: hidden !important;
     }
 </style>
 """, unsafe_allow_html=True)
