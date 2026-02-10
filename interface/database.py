@@ -17,7 +17,10 @@ except ImportError:
     FIREBASE_AVAILABLE = False
 
 DB_TYPE = "SQLITE"
-DB_FILE = "annotations.db"
+# Use /tmp for writable storage in Docker (ephemeral but always writable).
+# Locally, falls back to the script's own directory.
+_DB_DIR = "/tmp" if os.path.isdir("/tmp") else os.path.dirname(os.path.abspath(__file__))
+DB_FILE = os.path.join(_DB_DIR, "annotations.db")
 db_ref = None
 
 

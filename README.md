@@ -1,3 +1,13 @@
+---
+title: OphthalmoCapture
+emoji: 👁️
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_file: interface/main.py
+pinned: false
+---
+
 # 👁️ OphthalmoCapture
 
 **Sistema de Etiquetado Médico Oftalmológico** — Interfaz web para cargar imágenes de fondo de ojo, etiquetarlas (catarata / no catarata), dictar observaciones por voz con transcripción automática (Whisper) y descargar el paquete de etiquetado completo.
