@@ -28,13 +28,33 @@ DEFAULT_CREDENTIALS = {
             "password": "$2b$12$dcvvIg0q/2hZ1pO9gBKqY./LfujFHvoJUvPDLx1qhLS0LtD2kzJoq",
             # plain: "admin123"  — generate new hashes with stauth.Hasher
         },
-        "doctor1": {
-            "name": "Dr. García",
+        "Saul": {
+            "name": "Dr. Saul",
             "password": "$2b$12$dcvvIg0q/2hZ1pO9gBKqY./LfujFHvoJUvPDLx1qhLS0LtD2kzJoq",
             # plain: "admin123"
         },
-        "doctor2": {
-            "name": "Dra. López",
+        "Marisse": {
+            "name": "Dra. Marisse",
+            "password": "$2b$12$dcvvIg0q/2hZ1pO9gBKqY./LfujFHvoJUvPDLx1qhLS0LtD2kzJoq",
+            # plain: "admin123"
+        },
+        "Angel": {
+            "name": "Dr. Angel",
+            "password": "$2b$12$dcvvIg0q/2hZ1pO9gBKqY./LfujFHvoJUvPDLx1qhLS0LtD2kzJoq",
+            # plain: "admin123"
+        },
+        "Enmanuel": {
+            "name": "Dr. Enmanuel",
+            "password": "$2b$12$dcvvIg0q/2hZ1pO9gBKqY./LfujFHvoJUvPDLx1qhLS0LtD2kzJoq",
+            # plain: "admin123"
+        },
+        "Micaela": {
+            "name": "Dra. Micaela",
+            "password": "$2b$12$dcvvIg0q/2hZ1pO9gBKqY./LfujFHvoJUvPDLx1qhLS0LtD2kzJoq",
+            # plain: "admin123"
+        },
+        "Miguel": {
+            "name": "Dr. Miguel",
             "password": "$2b$12$dcvvIg0q/2hZ1pO9gBKqY./LfujFHvoJUvPDLx1qhLS0LtD2kzJoq",
             # plain: "admin123"
         },
