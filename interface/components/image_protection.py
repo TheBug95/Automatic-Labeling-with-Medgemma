@@ -3,18 +3,20 @@
 Injects CSS and JavaScript into the Streamlit page to prevent users from
 downloading, dragging, or otherwise saving the confidential medical images.
 
-APPROACH:
-  Streamlit's st.markdown(unsafe_allow_html=True) renders <style> tags but
-  STRIPS <script> tags.  To run JS without components.html (which creates
-  iframes that cause layout shifts on HF Spaces), we use the classic
-  <img src=x onerror="…"> trick — the onerror handler executes inline JS
-  directly in the main Streamlit DOM, with no iframe.
+APPROACH (HF Spaces compatible):
+  1. CSS via st.markdown(unsafe_allow_html=True) — Streamlit renders <style>
+     natively.  Handles pointer-events, overlays, drag prevention.
+  2. JS via st.html() — Streamlit >= 1.33 renders raw HTML (including
+     <script>) inside a tiny srcdoc iframe.  From there we reach the real
+     Streamlit DOM via window.parent.document (same-origin).
+  3. Additional CSS hides the st.html wrapper divs ([data-testid="stHtml"])
+     so the iframe has ZERO visual footprint — no layout shifts.
 
 Protection layers (defence-in-depth):
   1. CSS: pointer-events:none, user-select:none on <img>.
   2. CSS: transparent ::after overlay on stImage containers.
   3. CSS: -webkit-touch-callout:none for mobile.
-  4. JS:  contextmenu blocked on entire document.
+  4. JS:  contextmenu blocked on entire parent document.
   5. JS:  Ctrl+S / Ctrl+U / Ctrl+P / F12 / DevTools shortcuts blocked.
   6. JS:  dragstart blocked for images.
   7. JS:  MutationObserver re-applies draggable=false to new images.
@@ -22,11 +24,11 @@ Protection layers (defence-in-depth):
 
 import streamlit as st
 
-# ── CSS + JS injected via st.markdown ────────────────────────────────────────
-_PROTECTION_HTML = """
+# ── CSS via st.markdown ──────────────────────────────────────────────────────
+_PROTECTION_CSS = """
 <style>
 /* Layer 1: Disable ALL interaction on <img> tags */
-img:not([data-protection-trigger]) {
+img {
     pointer-events: none       !important;
     user-select: none          !important;
     -webkit-user-select: none  !important;
@@ -56,70 +58,107 @@ img:not([data-protection-trigger]) {
     user-drag: none         !important;
 }
 
-/* Hide the trigger pixel completely */
-img[data-protection-trigger] {
-    display: none !important;
+/* ── Hide st.html() wrappers to prevent ANY layout shift ──────────────── */
+[data-testid="stHtml"] {
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 0 !important;
+    font-size: 0 !important;
+    border: none !important;
+}
+[data-testid="stHtml"] iframe {
+    height: 0 !important;
+    min-height: 0 !important;
+    border: none !important;
+    display: block !important;
 }
 </style>
+"""
 
-<!-- JS via onerror trick — runs directly in Streamlit DOM, no iframe -->
-<img data-protection-trigger src="x" onerror="
-(function(doc){
-    if(doc.__ophthalmo_protection__) return;
-    doc.__ophthalmo_protection__=true;
+# ── JS via st.html() — runs inside srcdoc iframe, reaches parent DOM ─────────
+_PROTECTION_JS = """
+<script>
+(function () {
+    var doc;
+    try { doc = window.parent.document; } catch(e) { doc = document; }
 
-    function block(e){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();return false;}
+    // Guard: only attach once per page lifecycle
+    if (doc.__ophthalmo_protection__) return;
+    doc.__ophthalmo_protection__ = true;
 
-    doc.addEventListener('contextmenu',function(e){return block(e);},true);
+    function block(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        return false;
+    }
 
-    doc.addEventListener('keydown',function(e){
-        var dominated=false;
-        var ctrl=e.ctrlKey||e.metaKey;
-        var key=e.key?e.key.toLowerCase():'';
-        if(ctrl&&key==='s')dominated=true;
-        if(ctrl&&key==='u')dominated=true;
-        if(ctrl&&key==='p')dominated=true;
-        if(e.keyCode===123)dominated=true;
-        if(ctrl&&e.shiftKey&&key==='i')dominated=true;
-        if(ctrl&&e.shiftKey&&key==='j')dominated=true;
-        if(ctrl&&e.shiftKey&&key==='c')dominated=true;
-        if(dominated)return block(e);
-    },true);
+    // ── Block context menu (right-click) on ENTIRE page ─────────────────
+    doc.addEventListener('contextmenu', function (e) {
+        return block(e);
+    }, true);
 
-    doc.addEventListener('dragstart',function(e){
-        if(e.target&&e.target.tagName==='IMG')return block(e);
-    },true);
+    // ── Block keyboard shortcuts ────────────────────────────────────────
+    doc.addEventListener('keydown', function (e) {
+        var dominated = false;
+        var ctrl = e.ctrlKey || e.metaKey;
+        var key  = e.key ? e.key.toLowerCase() : '';
 
-    function lockImgs(root){
-        var imgs=root.querySelectorAll?root.querySelectorAll('img:not([data-protection-trigger])'):[];
-        for(var i=0;i<imgs.length;i++){
-            imgs[i].setAttribute('draggable','false');
-            imgs[i].ondragstart=function(){return false;};
-            imgs[i].oncontextmenu=function(){return false;};
+        if (ctrl && key === 's') dominated = true;   // Save page
+        if (ctrl && key === 'u') dominated = true;   // View source
+        if (ctrl && key === 'p') dominated = true;   // Print
+        if (e.keyCode === 123)   dominated = true;   // F12
+        if (ctrl && e.shiftKey && key === 'i') dominated = true;  // Inspector
+        if (ctrl && e.shiftKey && key === 'j') dominated = true;  // Console
+        if (ctrl && e.shiftKey && key === 'c') dominated = true;  // Picker
+
+        if (dominated) return block(e);
+    }, true);
+
+    // ── Block drag-and-drop of images ───────────────────────────────────
+    doc.addEventListener('dragstart', function (e) {
+        if (e.target && e.target.tagName === 'IMG') return block(e);
+    }, true);
+
+    // ── MutationObserver — lock new images as they appear ───────────────
+    function lockImgs(root) {
+        var imgs = root.querySelectorAll ? root.querySelectorAll('img') : [];
+        for (var i = 0; i < imgs.length; i++) {
+            imgs[i].setAttribute('draggable', 'false');
+            imgs[i].ondragstart = function () { return false; };
+            imgs[i].oncontextmenu = function () { return false; };
         }
     }
     lockImgs(doc);
 
-    var t=null;
-    new MutationObserver(function(muts){
-        if(t)return;
-        t=setTimeout(function(){
-            t=null;
+    var timer = null;
+    new MutationObserver(function () {
+        if (timer) return;
+        timer = setTimeout(function () {
+            timer = null;
             lockImgs(doc);
-        },200);
-    }).observe(doc.body,{childList:true,subtree:true});
+        }, 250);
+    }).observe(doc.body, { childList: true, subtree: true });
 
-})(document);
-" />
+})();
+</script>
 """
 
 
 def inject_image_protection():
     """Inject CSS + JS image-protection layers into the page.
 
-    Uses st.markdown only — NO components.html iframes — so there are
-    zero layout shifts.  The JS guard (doc.__ophthalmo_protection__)
-    ensures listeners are attached only once per page lifecycle even
-    though st.markdown re-renders on every Streamlit rerun.
+    - CSS via st.markdown  (always re-injected per rerun, as Streamlit requires).
+    - JS via st.html       (rendered with <script> support; internal guard
+      prevents duplicate listeners across reruns).
+    - The CSS also hides st.html wrappers to prevent layout shifts.
     """
-    st.markdown(_PROTECTION_HTML, unsafe_allow_html=True)
+    # 1) CSS protection + hide st.html wrappers
+    st.markdown(_PROTECTION_CSS, unsafe_allow_html=True)
+
+    # 2) JS protection (right-click, keyboard shortcuts, drag, observer)
+    st.html(_PROTECTION_JS)
