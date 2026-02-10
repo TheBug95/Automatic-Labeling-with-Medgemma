@@ -280,50 +280,51 @@ current_img = sm.get_current_image()
 order = st.session_state.image_order
 current_idx = order.index(current_id)
 
-# ── Two-column layout: Image | Tools ─────────────────────────────────────────
-col_img, col_tools = st.columns([1.5, 1])
+# ── Single-column layout ─────────────────────────────────────────────────────
 
-with col_img:
-    st.image(
-        current_img["bytes"],
-        caption=current_img["filename"],
-        use_container_width=True,
+# 1️⃣ LABELER — radio buttons at full width
+render_labeler(current_id)
+
+st.divider()
+
+# 2️⃣ IMAGE — with navigation and delete
+st.image(
+    current_img["bytes"],
+    caption=current_img["filename"],
+    use_container_width=True,
+)
+
+c1, c2, c3 = st.columns([1, 2, 1])
+with c1:
+    if st.button("⬅️ Anterior", disabled=(len(order) <= 1)):
+        new_idx = (current_idx - 1) % len(order)
+        st.session_state.current_image_id = order[new_idx]
+        sm.update_activity()
+        st.rerun()
+with c2:
+    st.markdown(
+        f"<div style='text-align:center'><b>{current_img['filename']}</b>"
+        f"<br>({current_idx + 1} de {len(order)})</div>",
+        unsafe_allow_html=True,
     )
-
-    # Navigation
-    c1, c2, c3 = st.columns([1, 2, 1])
-    with c1:
-        if st.button("⬅️ Anterior", disabled=(len(order) <= 1)):
-            new_idx = (current_idx - 1) % len(order)
-            st.session_state.current_image_id = order[new_idx]
-            sm.update_activity()
-            st.rerun()
-    with c2:
-        st.markdown(
-            f"<div style='text-align:center'><b>{current_img['filename']}</b>"
-            f"<br>({current_idx + 1} de {len(order)})</div>",
-            unsafe_allow_html=True,
-        )
-    with c3:
-        if st.button("Siguiente ➡️", disabled=(len(order) <= 1)):
-            new_idx = (current_idx + 1) % len(order)
-            st.session_state.current_image_id = order[new_idx]
-            sm.update_activity()
-            st.rerun()
-
-    # Delete image from session
-    if st.button("🗑️ Eliminar esta imagen", key="delete_img"):
-        sm.remove_image(current_id)
+with c3:
+    if st.button("Siguiente ➡️", disabled=(len(order) <= 1)):
+        new_idx = (current_idx + 1) % len(order)
+        st.session_state.current_image_id = order[new_idx]
         sm.update_activity()
         st.rerun()
 
-with col_tools:
-    render_labeler(current_id)
+if st.button("🗑️ Eliminar esta imagen", key="delete_img"):
+    sm.remove_image(current_id)
+    sm.update_activity()
+    st.rerun()
 
-    st.divider()
+st.divider()
 
-    render_recorder(current_id, model, selected_language)
+# 3️⃣ RECORDER — dictation and transcription
+render_recorder(current_id, model, selected_language)
 
-    st.divider()
+st.divider()
 
-    render_downloader(current_id)
+# 4️⃣ DOWNLOAD (individual) + SESSION INFO — two columns
+render_downloader(current_id)

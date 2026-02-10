@@ -34,7 +34,8 @@ def add_image(filename: str, image_bytes: bytes) -> str:
     st.session_state.images[img_id] = {
         "filename": filename,
         "bytes": image_bytes,
-        "label": None,                 # Set during labeling (Phase 3)
+        "label": None,                 # Categorical: Normal/Cataract/Bad quality/Needs dilation
+        "locs_data": {},               # LOCS III: {"nuclear_opalescence": int, "nuclear_color": int, "cortical_opacity": int}
         "audio_bytes": None,           # WAV from recording (Phase 4)
         "transcription": "",           # Editable transcription text
         "transcription_original": "",  # Original Whisper output (read-only)

@@ -23,6 +23,7 @@ def _image_metadata(img: dict) -> dict:
     return {
         "filename": img["filename"],
         "label": img["label"],
+        "locs_data": img.get("locs_data", {}),
         "transcription": img["transcription"],
         "transcription_original": img["transcription_original"],
         "doctor": img.get("labeled_by", ""),
@@ -76,12 +77,18 @@ def export_full_session() -> tuple[bytes, str]:
         # ── Summary CSV ──────────────────────────────────────────────────
         csv_buf = io.StringIO()
         writer = csv.writer(csv_buf)
-        writer.writerow(["filename", "label", "has_audio", "has_transcription", "doctor"])
+        writer.writerow(["filename", "label", "nuclear_opalescence",
+                         "nuclear_color", "cortical_opacity",
+                         "has_audio", "has_transcription", "doctor"])
         for img_id in order:
             img = images[img_id]
+            locs = img.get("locs_data", {})
             writer.writerow([
                 img["filename"],
                 img["label"] or "",
+                locs.get("nuclear_opalescence", ""),
+                locs.get("nuclear_color", ""),
+                locs.get("cortical_opacity", ""),
                 "yes" if img["audio_bytes"] else "no",
                 "yes" if img["transcription"] else "no",
                 img.get("labeled_by", ""),
@@ -150,16 +157,22 @@ def export_huggingface_csv() -> tuple[bytes, str]:
 
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(["filename", "label", "label_code", "transcription", "doctor"])
+    writer.writerow(["filename", "label", "label_code",
+                     "nuclear_opalescence", "nuclear_color", "cortical_opacity",
+                     "transcription", "doctor"])
 
     for img_id in order:
         img = images[img_id]
         if img["label"] is None:
             continue
+        locs = img.get("locs_data", {})
         writer.writerow([
             img["filename"],
             img["label"],
             label_map.get(img["label"], ""),
+            locs.get("nuclear_opalescence", ""),
+            locs.get("nuclear_color", ""),
+            locs.get("cortical_opacity", ""),
             img["transcription"],
             img.get("labeled_by", ""),
         ])
@@ -188,10 +201,14 @@ def export_jsonl() -> tuple[bytes, str]:
         img = images[img_id]
         if img["label"] is None:
             continue
+        locs = img.get("locs_data", {})
         obj = {
             "filename": img["filename"],
             "label": img["label"],
             "label_code": label_map.get(img["label"], ""),
+            "nuclear_opalescence": locs.get("nuclear_opalescence"),
+            "nuclear_color": locs.get("nuclear_color"),
+            "cortical_opacity": locs.get("cortical_opacity"),
             "transcription": img["transcription"],
             "doctor": img.get("labeled_by", ""),
         }

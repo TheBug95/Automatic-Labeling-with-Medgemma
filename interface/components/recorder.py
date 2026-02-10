@@ -91,6 +91,7 @@ def render_recorder(image_id: str, model, language: str):
                         transcription=img["transcription"],
                         doctor_name=st.session_state.get("doctor_name", ""),
                         session_id=st.session_state.get("session_id", ""),
+                        locs_data=img.get("locs_data", {}),
                     )
                 except Exception:
                     pass
@@ -140,8 +141,8 @@ def render_recorder(image_id: str, model, language: str):
             img["transcription_original"] = ""
             st.session_state.pop(segments_key, None)
             st.session_state.pop(processed_key, None)
-            st.session_state.pop(f"transcription_area_{image_id}", None)
-            # Clear the audio_input widget state to reset the recorder
+            # Clear both text_area and audio_input widget states
+            st.session_state[f"transcription_area_{image_id}"] = ""
             st.session_state.pop(f"audio_input_{image_id}", None)
             sm.update_activity()
             st.rerun()
@@ -157,6 +158,7 @@ def render_recorder(image_id: str, model, language: str):
             use_container_width=True,
         ):
             img["transcription"] = img["transcription_original"]
+            st.session_state[f"transcription_area_{image_id}"] = img["transcription_original"]
             sm.update_activity()
             st.rerun()
 
@@ -169,6 +171,7 @@ def render_recorder(image_id: str, model, language: str):
             use_container_width=True,
         ):
             img["transcription"] = ""
+            st.session_state[f"transcription_area_{image_id}"] = ""
             sm.update_activity()
             st.rerun()
 

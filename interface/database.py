@@ -56,6 +56,11 @@ def init_db():
             c.execute("ALTER TABLE annotations ADD COLUMN session_id TEXT DEFAULT ''")
         except sqlite3.OperationalError:
             pass  # column already exists
+        # Migration: add locs_data column (JSON string)
+        try:
+            c.execute("ALTER TABLE annotations ADD COLUMN locs_data TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass  # column already exists
         c.execute('''CREATE INDEX IF NOT EXISTS idx_ann_session
                       ON annotations (image_filename, session_id)''')
         conn.commit()
@@ -92,14 +97,17 @@ def save_annotation(image_filename, label, transcription, doctor_name=""):
 
 
 def save_or_update_annotation(
-    image_filename, label, transcription, doctor_name="", session_id=""
+    image_filename, label, transcription, doctor_name="", session_id="",
+    locs_data=None,
 ):
     """Upsert: within the same session, keep only ONE record per image.
 
     If a record for (image_filename, session_id) already exists → UPDATE it.
     Otherwise → INSERT a new one.
     """
+    import json as _json
     timestamp = datetime.datetime.now()
+    locs_json = _json.dumps(locs_data or {}, ensure_ascii=False)
 
     if DB_TYPE == "FIREBASE":
         # Query for existing doc with matching filename + session
@@ -115,6 +123,7 @@ def save_or_update_annotation(
                 "label": label,
                 "transcription": transcription,
                 "doctorName": doctor_name,
+                "locsData": locs_data or {},
                 "createdAt": timestamp,
             })
         else:
@@ -124,6 +133,7 @@ def save_or_update_annotation(
                 "transcription": transcription,
                 "doctorName": doctor_name,
                 "sessionId": session_id,
+                "locsData": locs_data or {},
                 "createdAt": timestamp,
             })
     else:
@@ -139,16 +149,19 @@ def save_or_update_annotation(
         if row:
             c.execute(
                 "UPDATE annotations "
-                "SET label = ?, transcription = ?, doctor_name = ?, created_at = ? "
+                "SET label = ?, transcription = ?, doctor_name = ?, "
+                "created_at = ?, locs_data = ? "
                 "WHERE id = ?",
-                (label, transcription, doctor_name, timestamp, row[0]),
+                (label, transcription, doctor_name, timestamp, locs_json, row[0]),
             )
         else:
             c.execute(
                 "INSERT INTO annotations "
-                "(image_filename, label, transcription, doctor_name, created_at, session_id) "
-                "VALUES (?, ?, ?, ?, ?, ?)",
-                (image_filename, label, transcription, doctor_name, timestamp, session_id),
+                "(image_filename, label, transcription, doctor_name, "
+                "created_at, session_id, locs_data) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (image_filename, label, transcription, doctor_name,
+                 timestamp, session_id, locs_json),
             )
         conn.commit()
         conn.close()
