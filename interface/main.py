@@ -15,7 +15,6 @@ from components.gallery import render_gallery
 from components.labeler import render_labeler
 from components.recorder import render_recorder
 from components.downloader import render_downloader
-from components.image_protection import inject_image_protection
 from services.auth_service import require_auth, do_logout
 
 # ── PAGE CONFIG ──────────────────────────────────────────────────────────────
@@ -27,9 +26,6 @@ st.set_page_config(
 # ── AUTHENTICATION GATE ───────────────────────────────────────────────────────
 if not require_auth():
     st.stop()
-
-# ── IMAGE PROTECTION (prevent download / right-click save) ───────────────────
-inject_image_protection()
 
 # ── UI LANGUAGE (initialize before anything renders) ─────────────────────────
 if "ui_language" not in st.session_state:
@@ -248,24 +244,7 @@ with st.sidebar:
 # ── LOAD WHISPER MODEL ───────────────────────────────────────────────────────
 with st.spinner(t("loading_whisper", model=selected_model)):
     model = load_whisper_model(selected_model)
-# ── BROWSER CLOSE GUARD (beforeunload) ───────────────────────────────────
-# Warn the user when they try to close/reload the tab with data in session.
-# Uses st.html() — wrapper is hidden by the protection CSS.
-if sm.has_undownloaded_data() and not st.session_state.get("session_downloaded", False):
-    st.html(
-        """<script>
-        (function(){
-            var doc;
-            try { doc = window.parent.document; } catch(e) { return; }
-            if (doc.__beforeunload_set__) return;
-            doc.__beforeunload_set__ = true;
-            window.parent.addEventListener('beforeunload', function(e) {
-                e.preventDefault();
-                e.returnValue = '';
-            });
-        })();
-        </script>"""
-    )
+
 # ── MAIN CONTENT ─────────────────────────────────────────────────────────────
 st.title(f"{config.APP_ICON} {config.APP_TITLE}")
 st.caption(t("app_subtitle"))
