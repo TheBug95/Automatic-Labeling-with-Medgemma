@@ -48,7 +48,6 @@ lightning_logs/
 .streamlit/secrets.toml
 .streamlit/.cache
 .streamlit/cache
-.streamlit/config.toml
 
 # =====================
 # Logs & Temp Files

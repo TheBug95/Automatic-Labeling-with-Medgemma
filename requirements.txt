@@ -1,5 +1,6 @@
 streamlit
 openai-whisper
+imageio-ffmpeg
 torch
 pandas
 firebase-admin
@@ -8,3 +9,4 @@ transformers
 pillow
 whisper
 numba
+streamlit-authenticator
